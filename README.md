@@ -30,8 +30,8 @@
 
 ```bash
 
-git clone https://github.com/yourusername/your-repo-name.git
-cd your-repo-name
+git clone https://github.com/markdeesoft/golang-api
+cd golang-api
 ```
 
 2. ตั้งค่า Environment Variables (สร้างไฟล์ .env สามารถ copy จาก .env.example):
