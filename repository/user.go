@@ -8,16 +8,27 @@ import (
 	"github.com/markdeesoft/golang-api/model"
 )
 
-// UserRepository โครงสร้างรองรับการเรียกใช้งานคิวรี่
-type UserRepository struct{}
+type UserRepository interface {
+	Count() (int64, error)
+	Delete(id uint) error
+	GetByID(id uint) (*model.User, error)
+	GetAll(limit int, offset int) ([]model.User, error)
+	ResetPassword(id uint, password string) error
+	Store(user *model.User) error
+	Update(id uint, user *model.User) error
+	GetByUsername(username string) (*model.User, error)
+}
 
-// NewUserRepository ฟังก์ชันสร้างอินสแตนซ์ของ Repository
-func NewUserRepository() *UserRepository {
-	return &UserRepository{}
+// userRepository โครงสร้างรองรับการเรียกใช้งานคิวรี่
+type userRepository struct{}
+
+// NewuserRepository ฟังก์ชันสร้างอินสแตนซ์ของ Repository
+func NewUserRepository() UserRepository {
+	return &userRepository{}
 }
 
 // Count ดึงจำนวนผู้ใช้ทั้งหมดที่ยังไม่ถูกลบ (สำหรับคำนวณหน้า)
-func (r *UserRepository) Count() (int64, error) {
+func (r *userRepository) Count() (int64, error) {
 	var total int64
 	query := "SELECT COUNT(*) FROM public.users WHERE deleted_at IS NULL"
 
@@ -29,7 +40,7 @@ func (r *UserRepository) Count() (int64, error) {
 }
 
 // List ดึงรายการผู้ใช้ตามช่วงที่กำหนดด้วย limit และ offset
-func (r *UserRepository) List(limit, offset int) ([]model.User, error) {
+func (r *userRepository) GetAll(limit, offset int) ([]model.User, error) {
 
 	query := `
 		SELECT id, name, email, phone, created_at 
@@ -67,7 +78,7 @@ func (r *UserRepository) List(limit, offset int) ([]model.User, error) {
 }
 
 // GetByID ดึงข้อมูลผู้ใช้รายบุคคลตาม ID
-func (r *UserRepository) GetByID(id int) (*model.User, error) {
+func (r *userRepository) GetByID(id uint) (*model.User, error) {
 	query := `
 		SELECT id, name, role FROM users 
 		WHERE id = $1 AND deleted_at IS NULL;
@@ -83,7 +94,7 @@ func (r *UserRepository) GetByID(id int) (*model.User, error) {
 }
 
 // Create บันทึกข้อมูลผู้ใช้ใหม่ลงฐานข้อมูล
-func (r *UserRepository) Store(user *model.User) error {
+func (r *userRepository) Store(user *model.User) error {
 
 	tx, err := database.DB.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -114,7 +125,7 @@ func (r *UserRepository) Store(user *model.User) error {
 }
 
 // แก้ไข
-func (r *UserRepository) Update(user *model.User, id int) error {
+func (r *userRepository) Update(id uint, user *model.User) error {
 
 	tx, err := database.DB.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -145,7 +156,7 @@ func (r *UserRepository) Update(user *model.User, id int) error {
 }
 
 // ลบ softdelete
-func (r *UserRepository) Delete(id int) error {
+func (r *userRepository) Delete(id uint) error {
 
 	query := `
 		UPDATE public.users 
@@ -158,7 +169,7 @@ func (r *UserRepository) Delete(id int) error {
 }
 
 // reset password to default
-func (r *UserRepository) ResetPassword(id int, password string) (*model.User, error) {
+func (r *userRepository) ResetPassword(id uint, password string) error {
 
 	query := `
 		UPDATE users SET 
@@ -172,8 +183,8 @@ func (r *UserRepository) ResetPassword(id int, password string) (*model.User, er
 	err := row.Scan(&user.UpdatedAt)
 
 	if err != nil {
-		return nil, err // ส่ง err กลับไปให้ Handler ไปตรวจสอบว่าเป็น sql.ErrNoRows หรือไม่
+		return err // ส่ง err กลับไปให้ Handler ไปตรวจสอบว่าเป็น sql.ErrNoRows หรือไม่
 	}
 
-	return &user, nil
+	return nil
 }

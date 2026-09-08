@@ -7,14 +7,23 @@ import (
 	"github.com/markdeesoft/golang-api/model"
 )
 
-type ProductCategoryRepository struct{}
-
-// NewProductCategoryRepository ฟังก์ชันสร้างอินสแตนซ์ของ Repository
-func NewProductCategoryRepository() *ProductCategoryRepository {
-	return &ProductCategoryRepository{}
+type ProductCategoryRepository interface {
+	Count() (int64, error)
+	Delete(id uint) error
+	GetByID(id uint) (*model.ProductCategory, error)
+	GetAll(limit int, offset int) ([]model.ProductCategory, error)
+	Store(product_category *model.ProductCategory) error
+	Update(id uint, updatedData *model.ProductCategory) (*model.ProductCategory, error)
 }
 
-func (r *ProductCategoryRepository) Count() (int64, error) {
+type productCategoryRepository struct{}
+
+// NewproductCategoryRepository ฟังก์ชันสร้างอินสแตนซ์ของ Repository
+func NewProductCategoryRepository() ProductCategoryRepository {
+	return &productCategoryRepository{}
+}
+
+func (r *productCategoryRepository) Count() (int64, error) {
 
 	var total int64
 	result := database.GDB.Model(&model.ProductCategory{}).Count(&total)
@@ -24,7 +33,7 @@ func (r *ProductCategoryRepository) Count() (int64, error) {
 	return total, nil
 }
 
-func (r *ProductCategoryRepository) List(limit, offset int) ([]model.ProductCategory, error) {
+func (r *productCategoryRepository) GetAll(limit, offset int) ([]model.ProductCategory, error) {
 
 	var product_categories []model.ProductCategory
 
@@ -35,7 +44,7 @@ func (r *ProductCategoryRepository) List(limit, offset int) ([]model.ProductCate
 
 }
 
-func (r *ProductCategoryRepository) GetByID(id int) (*model.ProductCategory, error) {
+func (r *productCategoryRepository) GetByID(id uint) (*model.ProductCategory, error) {
 
 	var product_category model.ProductCategory
 
@@ -48,7 +57,7 @@ func (r *ProductCategoryRepository) GetByID(id int) (*model.ProductCategory, err
 	return &product_category, nil
 }
 
-func (r *ProductCategoryRepository) Store(product_category *model.ProductCategory) error {
+func (r *productCategoryRepository) Store(product_category *model.ProductCategory) error {
 
 	result := database.GDB.Create(product_category)
 	if result.Error != nil {
@@ -59,7 +68,7 @@ func (r *ProductCategoryRepository) Store(product_category *model.ProductCategor
 	return nil
 }
 
-func (r *ProductCategoryRepository) Update(id string, updatedData *model.ProductCategory) (*model.ProductCategory, error) {
+func (r *productCategoryRepository) Update(id uint, updatedData *model.ProductCategory) (*model.ProductCategory, error) {
 
 	var product_category model.ProductCategory
 
@@ -81,7 +90,7 @@ func (r *ProductCategoryRepository) Update(id string, updatedData *model.Product
 	return &product_category, nil
 }
 
-func (r *ProductCategoryRepository) Delete(id int) error {
+func (r *productCategoryRepository) Delete(id uint) error {
 
 	// var product_category model.ProductCategory
 

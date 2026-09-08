@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"math"
 	"strconv"
@@ -15,16 +16,16 @@ import (
 
 // UserHandler โครงสร้างสำหรับผูกพึ่งพา (Dependency Injection) กับ Repository
 type UserHandler struct {
-	repo *repository.UserRepository
+	repo repository.UserRepository
 }
 
 // NewUserHandler ฟังก์ชันเริ่มต้นใช้งาน Handler โดยดึง Repo เข้ามาผูกไว้
-func NewUserHandler(repo *repository.UserRepository) *UserHandler {
+func NewUserHandler(repo repository.UserRepository) *UserHandler {
 	return &UserHandler{repo: repo}
 }
 
 // Handler functions
-func (h *UserHandler) GetUsers(c fiber.Ctx) error {
+func (h *UserHandler) List(c fiber.Ctx) error {
 
 	//รับค่า page และ limit จาก Query Parameters (หากไม่ได้ส่งมา ให้ใส่ค่าเริ่มต้นไว้)
 	pageStr := c.Query("page", "1")
@@ -48,9 +49,9 @@ func (h *UserHandler) GetUsers(c fiber.Ctx) error {
 		})
 	}
 
-	users, err := h.repo.List(limit, offset)
+	users, err := h.repo.GetAll(limit, offset)
 	if err != nil {
-		log.Printf("Handler Error - List failed: %v", err)
+		log.Printf("Handler Error - GetAll failed: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve records",
 		})
@@ -75,14 +76,21 @@ func (h *UserHandler) GetUsers(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(result)
 }
 
-func (h *UserHandler) GetUser(c fiber.Ctx) error {
+func (h *UserHandler) View(c fiber.Ctx) error {
 
 	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
+	if err != nil || id <= 0 {
+
+		if id <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid or non-positive ID",
+			})
+		}
+
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	user, err := h.repo.GetByID(id)
+	user, err := h.repo.GetByID(uint(id))
 	if err != nil {
 		log.Println(err)
 		return c.SendStatus(fiber.StatusNotFound)
@@ -91,7 +99,7 @@ func (h *UserHandler) GetUser(c fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-func (h *UserHandler) StoreUser(c fiber.Ctx) error {
+func (h *UserHandler) Store(c fiber.Ctx) error {
 
 	user := new(model.User)
 
@@ -106,7 +114,7 @@ func (h *UserHandler) StoreUser(c fiber.Ctx) error {
 		})
 	}
 
-	hashedPassword, err := getPassword("")
+	hashedPassword, err := getDefaultPassword("")
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to hash password",
@@ -125,10 +133,16 @@ func (h *UserHandler) StoreUser(c fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(user)
 }
 
-func (h *UserHandler) UpdateUser(c fiber.Ctx) error {
+func (h *UserHandler) Update(c fiber.Ctx) error {
 
 	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
+	if err != nil || id <= 0 {
+		if id <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid or non-positive ID",
+			})
+		}
+
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
@@ -144,9 +158,9 @@ func (h *UserHandler) UpdateUser(c fiber.Ctx) error {
 		})
 	}
 
-	if err := h.repo.Update(user, id); err != nil {
+	if err := h.repo.Update(uint(id), user); err != nil {
 		// หากไม่พบ ID ดังกล่าวในฐานข้อมูล
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "User not found",
 			})
@@ -161,15 +175,21 @@ func (h *UserHandler) UpdateUser(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(user)
 }
 
-func (h *UserHandler) DeleteUser(c fiber.Ctx) error {
+func (h *UserHandler) Delete(c fiber.Ctx) error {
 
 	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
+	if err != nil || id <= 0 {
+		if id <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid or non-positive ID",
+			})
+		}
+
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	if h.repo.Delete(id) != nil {
-		if err == sql.ErrNoRows {
+	if err := h.repo.Delete(uint(id)); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "User not found or already deleted",
 			})
@@ -205,21 +225,27 @@ func UploadPhotoUser(c fiber.Ctx) error {
 func (h *UserHandler) ResetPasswordUser(c fiber.Ctx) error {
 
 	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
+	if err != nil || id <= 0 {
+		if id <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid or non-positive ID",
+			})
+		}
+
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	hashedPassword, err := getPassword("")
+	hashedPassword, err := getDefaultPassword("")
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to hash password",
 		})
 	}
 
-	user, err := h.repo.ResetPassword(id, hashedPassword)
+	err = h.repo.ResetPassword(uint(id), hashedPassword)
 	if err != nil {
 		// หากไม่พบ ID ดังกล่าวในฐานข้อมูล
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "User not found",
 			})
@@ -231,10 +257,12 @@ func (h *UserHandler) ResetPasswordUser(c fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(user)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "User password changed successfully",
+	})
 }
 
-func getPassword(password string) (string, error) {
+func getDefaultPassword(password string) (string, error) {
 
 	if password == "" {
 		password = utils.GetEnvStr("USER_PASSWORD_DEFAULT", "12345678")

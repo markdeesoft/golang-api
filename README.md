@@ -14,6 +14,7 @@
 * **Framework / Router:** Fiber
 * **Database:** PostgreSQL พร้อม GORM (ORM)
 * **Authentication:** JWT (JSON Web Token)
+* **Testing:** Testify (`assert`, `mock`)
 * **Other Tools:** Docker, Swagger (API Documentation)
 
 ### 🏗️ โครงสร้างสถาปัตยกรรม (Architecture)
@@ -26,30 +27,49 @@
 
 ### ⏱️ วิธีการรันโปรเจกต์ (Getting Started)
 
-1. Clone Repository นี้ลงเครื่องของคุณ:
+1. Clone Repository นี้ลงเครื่องของคุณ :
 
-```bash
+    ```bash
 
-git clone https://github.com/markdeesoft/golang-api
-cd golang-api
-```
+    git clone https://github.com/markdeesoft/golang-api
+    cd golang-api
+    ```
 
-2. ตั้งค่า Environment Variables (สร้างไฟล์ .env สามารถ copy จาก .env.example):
+2. ตั้งค่า Environment Variables (สร้างไฟล์ .env สามารถ copy จาก .env.example) :
 
-```env
+    ```env
 
-PORT=8080
-ALLOW_ORIGIN="*"
-JWT_SECRET="secret"
-...
-```
+    PORT=8080
+    ALLOW_ORIGIN="*"
+    JWT_SECRET="secret"
+    ...
+    ```
 
-3. สั่งรันโปรเจกต์ผ่าน go run main.go:
+3. การรัน Unit Test (Testing) :
+    ```bash
 
-```bash
+    go test ./...
+    ```
 
-go run main.go:
-```
+    * **`-cover`**: สรุปเปอร์เซ็นต์ Code Coverage ออกมาเป็นตัวเลขสั้นๆ ใน Terminal
+        ```bash
+        go test -cover ./...
+        ```
+
+    * **`-coverprofile` & `go tool cover`**: แสดงผลผ่าน Web Browser ซึ่งจะไฮไลต์ให้เห็นชัดเจนว่าบรรทัดไหนใน Handler หรือ Repository ที่ถูกรันแล้ว (สีเขียว) และบรรทัดไหนยังไม่ถูกทดสอบ (สีแดง)
+        ```bash
+
+        go test -coverprofile=coverage.out ./...
+        go tool cover -html=coverage.out
+        ```
+
+
+4. สั่งรันโปรเจกต์ผ่าน go run main.go :
+
+    ```bash
+
+    go run main.go
+    ```
 
 ### 📝 API Endpoints (ตัวอย่าง)
 

@@ -12,7 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 	"github.com/markdeesoft/golang-api/database"
-	handler "github.com/markdeesoft/golang-api/handlers"
+	"github.com/markdeesoft/golang-api/handler"
 	"github.com/markdeesoft/golang-api/repository"
 )
 
@@ -64,6 +64,8 @@ func main() {
 	productCategoryHandler := handler.NewProductCategoryHandler(productCategoryRepo)
 	productHashtagRepo := repository.NewProductHashtagRepository()
 	productHashtagHandler := handler.NewProductHashtagHandler(productHashtagRepo)
+	productRepo := repository.NewProductRepository()
+	productHandler := handler.NewProductHandler(productRepo)
 
 	// Login route
 	app.Post("/auth/login", userHandler.Login)
@@ -78,21 +80,26 @@ func main() {
 	app.Get("/restricted", restricted)
 
 	// user handler
-	app.Get("/user", userHandler.GetUser)
-	app.Put("/user/:id", userHandler.UpdateUser)
+	app.Get("/user", userHandler.View)
+	app.Put("/user/:id", userHandler.Update)
 	app.Post("/user/uploadphoto", handler.UploadPhotoUser)
+	app.Delete("/user/:id", userHandler.Delete)
 	// productcategory handler
 	app.Get("/productcategory", productCategoryHandler.List)
 	app.Get("/productcategory/:id", productCategoryHandler.View)
+	app.Post("/productcategory", productCategoryHandler.Store)
+	app.Delete("/productcategory/:id", productCategoryHandler.Delete)
 	// product handler
 	app.Get("/producthash", productHashtagHandler.List)
+	app.Post("/producthash", productHashtagHandler.Store)
+	app.Put("/producthash/:id", productHashtagHandler.Update)
 	// product handler
-	app.Get("/product", productCategoryHandler.List)
-	app.Get("/product/:id", productCategoryHandler.View)
-	app.Post("/product", productCategoryHandler.Store)
-	app.Get("/product/:id/edit", productCategoryHandler.View)
-	app.Put("/product/:id", productCategoryHandler.Update)
-	app.Delete("/product/:id", productCategoryHandler.Delete)
+	app.Get("/product", productHandler.List)
+	app.Get("/product/:id", productHandler.View)
+	app.Post("/product", productHandler.Store)
+	app.Get("/product/:id/edit", productHandler.View)
+	app.Put("/product/:id", productHandler.Update)
+	app.Delete("/product/:id", productHandler.Delete)
 
 	// Group routes under /admin
 	adminGroup := app.Group("/admin")
@@ -101,11 +108,11 @@ func main() {
 	adminGroup.Use(isAdmin)
 
 	// admin/user handler
-	app.Get("/admin/user", userHandler.GetUsers)
-	app.Get("/admin/user/:id", userHandler.GetUser)
-	app.Post("/admin/user", userHandler.StoreUser)
-	app.Put("/admin/user/:id", userHandler.UpdateUser)
-	app.Delete("/admin/user/:id", userHandler.DeleteUser)
+	app.Get("/admin/user", userHandler.List)
+	app.Get("/admin/user/:id", userHandler.View)
+	app.Post("/admin/user", userHandler.Store)
+	app.Put("/admin/user/:id", userHandler.Update)
+	app.Delete("/admin/user/:id", userHandler.Delete)
 	app.Post("/admin/user/uploadphoto", handler.UploadPhotoUser)
 	app.Patch("/admin/user/resetpass/:id", userHandler.ResetPasswordUser)
 	// admin/productcategory handler
@@ -120,12 +127,12 @@ func main() {
 	app.Post("/admin/producthash", productHashtagHandler.Store)
 	app.Put("/admin/producthash/:id", productHashtagHandler.Update)
 	// admin/product handler
-	app.Get("/admin/product", productCategoryHandler.List)
-	app.Get("/admin/product/:id", productCategoryHandler.View)
-	app.Post("/admin/product", productCategoryHandler.Store)
-	app.Get("/admin/product/:id/edit", productCategoryHandler.View)
-	app.Put("/admin/product/:id", productCategoryHandler.Update)
-	app.Delete("/admin/product/:id", productCategoryHandler.Delete)
+	app.Get("/admin/product", productHandler.List)
+	app.Get("/admin/product/:id", productHandler.View)
+	app.Post("/admin/product", productHandler.Store)
+	app.Get("/admin/product/:id/edit", productHandler.View)
+	app.Put("/admin/product/:id", productHandler.Update)
+	app.Delete("/admin/product/:id", productHandler.Delete)
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -8,14 +8,23 @@ import (
 	"github.com/markdeesoft/golang-api/model"
 )
 
-type ProductRepository struct{}
-
-// NewProductRepository ฟังก์ชันสร้างอินสแตนซ์ของ Repository
-func NewProductRepository() *ProductRepository {
-	return &ProductRepository{}
+type ProductRepository interface {
+	Count() (int64, error)
+	Delete(id uint) error
+	GetByID(id uint) (*model.Product, error)
+	GetAll(limit int, offset int) ([]model.Product, error)
+	Store(product *model.Product) error
+	Update(id uint, updatedData *model.Product) (*model.Product, error)
 }
 
-func (r *ProductRepository) Count() (int64, error) {
+type productRepository struct{}
+
+// NewproductRepository ฟังก์ชันสร้างอินสแตนซ์ของ Repository
+func NewProductRepository() ProductRepository {
+	return &productRepository{}
+}
+
+func (r *productRepository) Count() (int64, error) {
 
 	var total int64
 	result := database.GDB.Model(&model.Product{}).Count(&total)
@@ -25,7 +34,7 @@ func (r *ProductRepository) Count() (int64, error) {
 	return total, nil
 }
 
-func (r *ProductRepository) List(limit, offset int) ([]model.Product, error) {
+func (r *productRepository) GetAll(limit, offset int) ([]model.Product, error) {
 
 	var products []model.Product
 
@@ -40,7 +49,7 @@ func (r *ProductRepository) List(limit, offset int) ([]model.Product, error) {
 
 }
 
-func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
+func (r *productRepository) GetByID(id uint) (*model.Product, error) {
 
 	var product model.Product
 
@@ -55,7 +64,7 @@ func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 	return &product, nil
 }
 
-func (r *ProductRepository) Store(product *model.Product) error {
+func (r *productRepository) Store(product *model.Product) error {
 
 	// เช็คว่ามี CategoryID นี้อยู่จริงไหม ป้องกันคีย์กำพร้า
 	var count int64
@@ -73,7 +82,7 @@ func (r *ProductRepository) Store(product *model.Product) error {
 	return nil
 }
 
-func (r *ProductRepository) Update(id string, updatedData *model.Product) (*model.Product, error) {
+func (r *productRepository) Update(id uint, updatedData *model.Product) (*model.Product, error) {
 
 	var product model.Product
 
@@ -106,7 +115,7 @@ func (r *ProductRepository) Update(id string, updatedData *model.Product) (*mode
 	return &product, nil
 }
 
-func (r *ProductRepository) Delete(id int) error {
+func (r *productRepository) Delete(id uint) error {
 
 	// var product model.Product
 

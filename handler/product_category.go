@@ -12,15 +12,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type ProductHashtagHandler struct {
-	repo *repository.ProductHashtagRepository
+type ProductCategoryHandler struct {
+	repo repository.ProductCategoryRepository
 }
 
-func NewProductHashtagHandler(repo *repository.ProductHashtagRepository) *ProductHashtagHandler {
-	return &ProductHashtagHandler{repo: repo}
+// NewProductCategoryHandler ฟังก์ชันเริ่มต้นใช้งาน Handler โดยดึง Repo เข้ามาผูกไว้
+func NewProductCategoryHandler(repo repository.ProductCategoryRepository) *ProductCategoryHandler {
+	return &ProductCategoryHandler{repo: repo}
 }
 
-func (h *ProductHashtagHandler) List(c fiber.Ctx) error {
+func (h *ProductCategoryHandler) List(c fiber.Ctx) error {
 
 	//รับค่า page และ limit จาก Query Parameters (หากไม่ได้ส่งมา ให้ใส่ค่าเริ่มต้นไว้)
 	pageStr := c.Query("page", "1")
@@ -38,13 +39,13 @@ func (h *ProductHashtagHandler) List(c fiber.Ctx) error {
 
 	total, err := h.repo.Count()
 	if err != nil {
-		log.Printf("Failed to count product_hashtag: %v", err)
+		log.Printf("Failed to count product_category: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to count total records",
 		})
 	}
 
-	product_hashtags, err := h.repo.List(limit, offset)
+	product_categories, err := h.repo.GetAll(limit, offset)
 	if err != nil {
 		log.Printf("Handler Error - List failed: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -59,76 +60,95 @@ func (h *ProductHashtagHandler) List(c fiber.Ctx) error {
 	}
 
 	// ประกอบข้อมูลทั้งหมดส่งกลับให้ Client
-	result := model.PaginationResult[model.ProductHashtag]{
+	result := model.PaginationResult[model.ProductCategory]{
 		Total:      total,
 		Page:       page,
 		Limit:      limit,
 		TotalPages: totalPages,
-		Data:       product_hashtags,
+		Data:       product_categories,
 	}
 
 	// ส่ง Array ของรายชื่อผู้ใช้กลับไปให้ Client ด้วยสถานะ 200 OK
 	return c.Status(fiber.StatusOK).JSON(result)
 }
 
-func (h *ProductHashtagHandler) View(c fiber.Ctx) error {
+func (h *ProductCategoryHandler) View(c fiber.Ctx) error {
 
 	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
+	if err != nil || id <= 0 {
+
+		if id <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid or non-positive ID",
+			})
+		}
+
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	product_hashtag, err := h.repo.GetByID(id)
+	product_category, err := h.repo.GetByID(uint(id))
 	if err != nil {
 		log.Println(err)
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	return c.JSON(product_hashtag)
+	return c.JSON(product_category)
 }
 
-func (h *ProductHashtagHandler) Store(c fiber.Ctx) error {
+func (h *ProductCategoryHandler) Store(c fiber.Ctx) error {
 
-	product_hashtag := new(model.ProductHashtag)
+	product_category := new(model.ProductCategory)
 
-	if err := c.Bind().Body(&product_hashtag); err != nil {
+	if err := c.Bind().Body(&product_category); err != nil {
+		log.Println("BodyParser Error:", err)
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 
 	//validation
-	if product_hashtag.Name == "" {
+	if err := product_category.Validate(); err != nil {
+		log.Println("Validation Error:", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Name cannot be empty",
 		})
 	}
 
 	// สั่งงานผ่านเลเยอร์ Repository
-	if err := h.repo.Store(product_hashtag); err != nil {
+	if err := h.repo.Store(product_category); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create  product hashtag in database",
+			"error": "Failed to create  product category in database",
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(product_hashtag)
+	return c.Status(fiber.StatusCreated).JSON(product_category)
 }
 
-func (h *ProductHashtagHandler) Update(c fiber.Ctx) error {
+func (h *ProductCategoryHandler) Update(c fiber.Ctx) error {
 
-	id := c.Params("id")
-	request := new(model.ProductHashtag)
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
 
+		if id <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid or non-positive ID",
+			})
+		}
+
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+
+	request := new(model.ProductCategory)
 	if err := c.Bind().Body(&request); err != nil {
 		return err
 	}
 
 	//validation
-	if request.Name == "" {
+	if err := request.Validate(); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Name cannot be empty",
 		})
 	}
 
-	updatedUser, err := h.repo.Update(id, request)
+	updatedUser, err := h.repo.Update(uint(id), request)
 	if err != nil {
 
 		// ดักตรวจสอบกรณีไม่พบข้อมูล ID นี้ในระบบ (ซอฟต์ดีลีทไปแล้ว หรือไม่มีอยู่จริง)
@@ -138,40 +158,42 @@ func (h *ProductHashtagHandler) Update(c fiber.Ctx) error {
 
 		log.Printf("Handler Error - Update failed: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update product hashtag in database",
+			"error": "Failed to update product category in database",
 		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(updatedUser)
 }
 
-// func (h *ProductHashtagHandler) StatusActive(c fiber.Ctx) error {
+func (h *ProductCategoryHandler) Delete(c fiber.Ctx) error {
 
-// 	id, err := strconv.Atoi(c.Params("id"))
-// 	if err != nil {
-// 		return c.SendStatus(fiber.StatusBadRequest)
-// 	}
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
 
-// 	request := new(model.ProductHashtag)
-// 	if err := c.Bind().Body(&request); err != nil {
-// 		return err
-// 	}
+		if id <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid or non-positive ID",
+			})
+		}
 
-// 	if err := h.repo.Active(request.Actived, id); err != nil {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
 
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-// 				"error": "product hashtag not found or already deleted",
-// 			})
-// 		}
+	if err := h.repo.Delete(uint(id)); err != nil {
 
-// 		log.Printf("Failed to execute soft delete: %v", err)
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-// 			"error": "Failed to delete product hashtag",
-// 		})
-// 	}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "product category not found or already deleted",
+			})
+		}
 
-// 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-// 		"message": "product hashtag deleted successfully (Soft Delete)",
-// 	})
-// }
+		log.Printf("Failed to execute soft delete: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete product category",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "product category deleted successfully (Soft Delete)",
+	})
+}
