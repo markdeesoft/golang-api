@@ -7,14 +7,21 @@ import (
 	"github.com/markdeesoft/golang-api/model"
 )
 
-type ProductHashtagRepository struct{}
-
-// NewProductHashtagRepository ฟังก์ชันสร้างอินสแตนซ์ของ Repository
-func NewProductHashtagRepository() *ProductHashtagRepository {
-	return &ProductHashtagRepository{}
+type ProductHashtagRepository interface {
+	Count() (int64, error)
+	GetByID(id uint) (*model.ProductHashtag, error)
+	GetAll(limit int, offset int) ([]model.ProductHashtag, error)
+	Store(product_hashtag *model.ProductHashtag) error
+	Update(id uint, updatedData *model.ProductHashtag) (*model.ProductHashtag, error)
 }
 
-func (r *ProductHashtagRepository) Count() (int64, error) {
+type productHashtagRepository struct{}
+
+func NewProductHashtagRepository() ProductHashtagRepository {
+	return &productHashtagRepository{}
+}
+
+func (r *productHashtagRepository) Count() (int64, error) {
 
 	var total int64
 	result := database.GDB.Model(&model.ProductHashtag{}).Count(&total)
@@ -24,7 +31,7 @@ func (r *ProductHashtagRepository) Count() (int64, error) {
 	return total, nil
 }
 
-func (r *ProductHashtagRepository) List(limit, offset int) ([]model.ProductHashtag, error) {
+func (r *productHashtagRepository) GetAll(limit, offset int) ([]model.ProductHashtag, error) {
 
 	var product_hashtags []model.ProductHashtag
 
@@ -35,7 +42,7 @@ func (r *ProductHashtagRepository) List(limit, offset int) ([]model.ProductHasht
 
 }
 
-func (r *ProductHashtagRepository) GetByID(id int) (*model.ProductHashtag, error) {
+func (r *productHashtagRepository) GetByID(id uint) (*model.ProductHashtag, error) {
 
 	var product_hashtag model.ProductHashtag
 
@@ -48,7 +55,7 @@ func (r *ProductHashtagRepository) GetByID(id int) (*model.ProductHashtag, error
 	return &product_hashtag, nil
 }
 
-func (r *ProductHashtagRepository) Store(product_hashtag *model.ProductHashtag) error {
+func (r *productHashtagRepository) Store(product_hashtag *model.ProductHashtag) error {
 
 	result := database.GDB.Create(product_hashtag)
 	if result.Error != nil {
@@ -59,7 +66,7 @@ func (r *ProductHashtagRepository) Store(product_hashtag *model.ProductHashtag) 
 	return nil
 }
 
-func (r *ProductHashtagRepository) Update(id string, updatedData *model.ProductHashtag) (*model.ProductHashtag, error) {
+func (r *productHashtagRepository) Update(id uint, updatedData *model.ProductHashtag) (*model.ProductHashtag, error) {
 
 	var product_hashtag model.ProductHashtag
 
@@ -77,18 +84,5 @@ func (r *ProductHashtagRepository) Update(id string, updatedData *model.ProductH
 		return nil, err
 	}
 
-	// ส่งข้อมูลเวอร์ชันอัปเดตล่าสุดกลับไป
 	return &product_hashtag, nil
 }
-
-// func (r *ProductHashtagRepository) Active(status bool, id int) error {
-
-// 	var product_hashtag model.ProductHashtag
-
-// 	result := database.GDB.First(&product_hashtag, id)
-// 	if result.Error != nil {
-// 		return result.Error
-// 	}
-
-// 	return nil
-// }

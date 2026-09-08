@@ -6,7 +6,7 @@ import (
 )
 
 // GetByUsername ค้นหาผู้ใช้จาก Username/email/phone เพื่อนำข้อมูลไปเช็ครหัสผ่านต่อ
-func (r *UserRepository) GetByUsername(username string) (*model.User, error) {
+func (r *userRepository) GetByUsername(username string) (*model.User, error) {
 	// ต้องดึงคอลัมน์ password ออกมาด้วยเพื่อใช้ตรวจสอบ และต้องเช็คว่ายังไม่ถูกลบ (Soft Delete)
 	query := `
 		SELECT id, name, email, phone, password, role 

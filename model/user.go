@@ -9,12 +9,12 @@ import (
 type User struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
 	Name      string         `gorm:"unique;not null" json:"name"`
-	Phone     string         `gorm:"unique;not null" json:"phone"`
-	Email     string         `gorm:"unique;not null" json:"email"`
+	Phone     string         `gorm:"unique" json:"phone" validate:"omitempty,max=10"`
+	Email     string         `gorm:"unique;not null" json:"email" validate:"email"`
 	Password  string         `gorm:"not null" json:"-"`
 	Role      string         `json:"role"`
 	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at,omitempty"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
