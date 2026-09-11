@@ -3,8 +3,8 @@ package repository
 import (
 	"log"
 
-	"github.com/markdeesoft/golang-api/database"
 	"github.com/markdeesoft/golang-api/model"
+	"gorm.io/gorm"
 )
 
 type ProductHashtagRepository interface {
@@ -15,16 +15,18 @@ type ProductHashtagRepository interface {
 	Update(id uint, updatedData *model.ProductHashtag) (*model.ProductHashtag, error)
 }
 
-type productHashtagRepository struct{}
+type productHashtagRepository struct {
+	db *gorm.DB
+}
 
-func NewProductHashtagRepository() ProductHashtagRepository {
-	return &productHashtagRepository{}
+func NewProductHashtagRepository(db *gorm.DB) ProductHashtagRepository {
+	return &productHashtagRepository{db: db}
 }
 
 func (r *productHashtagRepository) Count() (int64, error) {
 
 	var total int64
-	result := database.GDB.Model(&model.ProductHashtag{}).Count(&total)
+	result := r.db.Model(&model.ProductHashtag{}).Count(&total)
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -36,7 +38,7 @@ func (r *productHashtagRepository) GetAll(limit, offset int) ([]model.ProductHas
 	var product_hashtags []model.ProductHashtag
 
 	// สั่งดึงข้อมูลตามหน้า LIMIT / OFFSET
-	err := database.GDB.Limit(limit).Offset(offset).Order("id asc").Find(&product_hashtags).Error
+	err := r.db.Limit(limit).Offset(offset).Order("id asc").Find(&product_hashtags).Error
 
 	return product_hashtags, err
 
@@ -46,9 +48,9 @@ func (r *productHashtagRepository) GetByID(id uint) (*model.ProductHashtag, erro
 
 	var product_hashtag model.ProductHashtag
 
-	result := database.GDB.First(&product_hashtag, id)
+	result := r.db.First(&product_hashtag, id)
 	if result.Error != nil {
-		// log.Fatalf("Error creating query : %v", result.Error)
+		// log.Printf("Error creating query : %v", result.Error)
 		return nil, result.Error
 	}
 
@@ -57,9 +59,9 @@ func (r *productHashtagRepository) GetByID(id uint) (*model.ProductHashtag, erro
 
 func (r *productHashtagRepository) Store(product_hashtag *model.ProductHashtag) error {
 
-	result := database.GDB.Create(product_hashtag)
+	result := r.db.Create(product_hashtag)
 	if result.Error != nil {
-		log.Fatalf("Failed to execute insert query: %v", result.Error)
+		log.Printf("Failed to execute insert query: %v", result.Error)
 		return result.Error
 	}
 
@@ -70,13 +72,13 @@ func (r *productHashtagRepository) Update(id uint, updatedData *model.ProductHas
 
 	var product_hashtag model.ProductHashtag
 
-	result := database.GDB.First(&product_hashtag, id)
+	result := r.db.First(&product_hashtag, id)
 	if result.Error != nil {
-		log.Fatalf("Error creating query : %v", result.Error)
+		log.Printf("Error creating query : %v", result.Error)
 		return nil, result.Error
 	}
 
-	err := database.GDB.Model(&product_hashtag).Updates(model.ProductHashtag{
+	err := r.db.Model(&product_hashtag).Updates(model.ProductHashtag{
 		Name: updatedData.Name,
 	}).Error
 

@@ -17,10 +17,9 @@ import (
 
 // DB ตัวแปร Global (ตัวใหญ่) เพื่อให้แพ็กเกจอื่นเรียกใช้ได้
 var DB *sql.DB
-var GDB *gorm.DB
 
 // InitDB ทำหน้าที่เชื่อมต่อฐานข้อมูลตอนเริ่มโปรแกรม
-func InitDB() {
+func InitDB() *gorm.DB {
 	var err error
 
 	db_host := utils.GetEnvStr("DB_HOST", "localhost")
@@ -55,7 +54,7 @@ func InitDB() {
 		},
 	)
 
-	GDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: newLogger, // add Logger
 	})
 	if err != nil {
@@ -63,20 +62,10 @@ func InitDB() {
 	}
 
 	// Migrate the schema
-	GDB.AutoMigrate(&model.ProductCategory{}, &model.ProductHashtag{}, &model.Product{})
+	db.AutoMigrate(&model.ProductCategory{}, &model.ProductHashtag{}, &model.Product{})
 
-	SeedData()
+	SeedData(db)
 
 	fmt.Println("Database connection successfully established!")
-}
-
-func CheckConnected() bool {
-
-	// ทดสอบการเชื่อมต่อจริง
-	if DB == nil {
-		log.Fatalf("Error connecting to the database")
-		return false
-	}
-
-	return true
+	return db
 }

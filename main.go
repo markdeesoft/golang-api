@@ -54,17 +54,17 @@ func main() {
 		return c.SendString("Hello, World!")
 	})
 
-	database.InitDB()
-	defer database.DB.Close()
+	db := database.InitDB()
+	defer database.DB.Close() //สำหรับเทสรูปแบบ sql ปกติ
 
 	//ประกาศตัวแปรเพื่อประกอบร่าง (Dependency Injection)
-	userRepo := repository.NewUserRepository()
+	userRepo := repository.NewUserRepository(db)
 	userHandler := handler.NewUserHandler(userRepo)
-	productCategoryRepo := repository.NewProductCategoryRepository()
+	productCategoryRepo := repository.NewProductCategoryRepository(db)
 	productCategoryHandler := handler.NewProductCategoryHandler(productCategoryRepo)
-	productHashtagRepo := repository.NewProductHashtagRepository()
+	productHashtagRepo := repository.NewProductHashtagRepository(db)
 	productHashtagHandler := handler.NewProductHashtagHandler(productHashtagRepo)
-	productRepo := repository.NewProductRepository()
+	productRepo := repository.NewProductRepository(db)
 	productHandler := handler.NewProductHandler(productRepo)
 
 	// Login route

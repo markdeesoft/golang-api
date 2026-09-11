@@ -3,8 +3,8 @@ package repository
 import (
 	"log"
 
-	"github.com/markdeesoft/golang-api/database"
 	"github.com/markdeesoft/golang-api/model"
+	"gorm.io/gorm"
 )
 
 type ProductCategoryRepository interface {
@@ -16,17 +16,19 @@ type ProductCategoryRepository interface {
 	Update(id uint, updatedData *model.ProductCategory) (*model.ProductCategory, error)
 }
 
-type productCategoryRepository struct{}
+type productCategoryRepository struct {
+	db *gorm.DB
+}
 
 // NewproductCategoryRepository ฟังก์ชันสร้างอินสแตนซ์ของ Repository
-func NewProductCategoryRepository() ProductCategoryRepository {
-	return &productCategoryRepository{}
+func NewProductCategoryRepository(db *gorm.DB) ProductCategoryRepository {
+	return &productCategoryRepository{db: db}
 }
 
 func (r *productCategoryRepository) Count() (int64, error) {
 
 	var total int64
-	result := database.GDB.Model(&model.ProductCategory{}).Count(&total)
+	result := r.db.Model(&model.ProductCategory{}).Count(&total)
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -38,7 +40,7 @@ func (r *productCategoryRepository) GetAll(limit, offset int) ([]model.ProductCa
 	var product_categories []model.ProductCategory
 
 	// สั่งดึงข้อมูลตามหน้า LIMIT / OFFSET
-	err := database.GDB.Limit(limit).Offset(offset).Order("id asc").Find(&product_categories).Error
+	err := r.db.Limit(limit).Offset(offset).Order("id asc").Find(&product_categories).Error
 
 	return product_categories, err
 
@@ -48,9 +50,9 @@ func (r *productCategoryRepository) GetByID(id uint) (*model.ProductCategory, er
 
 	var product_category model.ProductCategory
 
-	result := database.GDB.First(&product_category, id)
+	result := r.db.First(&product_category, id)
 	if result.Error != nil {
-		// log.Fatalf("Error creating query : %v", result.Error)
+		// log.Printf("Error creating query : %v", result.Error)
 		return nil, result.Error
 	}
 
@@ -59,9 +61,9 @@ func (r *productCategoryRepository) GetByID(id uint) (*model.ProductCategory, er
 
 func (r *productCategoryRepository) Store(product_category *model.ProductCategory) error {
 
-	result := database.GDB.Create(product_category)
+	result := r.db.Create(product_category)
 	if result.Error != nil {
-		log.Fatalf("Failed to execute insert query: %v", result.Error)
+		log.Printf("Failed to execute insert query: %v", result.Error)
 		return result.Error
 	}
 
@@ -72,13 +74,13 @@ func (r *productCategoryRepository) Update(id uint, updatedData *model.ProductCa
 
 	var product_category model.ProductCategory
 
-	result := database.GDB.First(&product_category, id)
+	result := r.db.First(&product_category, id)
 	if result.Error != nil {
-		log.Fatalf("Error creating query : %v", result.Error)
+		log.Printf("Error creating query : %v", result.Error)
 		return nil, result.Error
 	}
 
-	err := database.GDB.Model(&product_category).Updates(model.ProductCategory{
+	err := r.db.Model(&product_category).Updates(model.ProductCategory{
 		Name: updatedData.Name,
 	}).Error
 
@@ -94,7 +96,7 @@ func (r *productCategoryRepository) Delete(id uint) error {
 
 	// var product_category model.ProductCategory
 
-	result := database.GDB.Delete(&model.ProductCategory{}, id)
+	result := r.db.Delete(&model.ProductCategory{}, id)
 	if result.Error != nil {
 		return result.Error
 	}

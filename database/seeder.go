@@ -8,13 +8,14 @@ import (
 	"github.com/markdeesoft/golang-api/model"
 	"github.com/markdeesoft/golang-api/utils"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-func SeedData() {
+func SeedData(db *gorm.DB) {
 
 	// เช็คเบื้องต้นว่ามีข้อมูลอยู่แล้วหรือยัง เพื่อไม่ให้ข้อมูลซ้ำซ้อนตอนสั่งรันใหม่
 	var count int64
-	result := GDB.Model(&model.User{}).Count(&count)
+	result := db.Model(&model.User{}).Count(&count)
 	if result.Error != nil {
 
 		log.Println("User Query Error", result.Error)
@@ -33,14 +34,14 @@ func SeedData() {
 		}
 
 		// 3. ใช้ GORM บันทึกข้อมูลลงตารางแบบ Bulk Insert (รวดเดียวทั้งหมด)
-		if err := GDB.Create(&datas).Error; err != nil {
+		if err := db.Create(&datas).Error; err != nil {
 			log.Fatalf("Failed to seed user: %v", err)
 		}
 
 		log.Println("User Database seeded successfully!")
 	}
 
-	result = GDB.Model(&model.ProductCategory{}).Count(&count)
+	result = db.Model(&model.ProductCategory{}).Count(&count)
 	if result.Error != nil {
 
 		log.Println("ProductCategory Query Error", result.Error)
@@ -60,14 +61,14 @@ func SeedData() {
 		}
 
 		// 3. ใช้ GORM บันทึกข้อมูลลงตารางแบบ Bulk Insert (รวดเดียวทั้งหมด)
-		if err := GDB.Create(&datas).Error; err != nil {
+		if err := db.Create(&datas).Error; err != nil {
 			log.Fatalf("Failed to seed product category: %v", err)
 		}
 
 		log.Println("ProductCategory Database seeded successfully!")
 	}
 
-	result = GDB.Model(&model.ProductHashtag{}).Count(&count)
+	result = db.Model(&model.ProductHashtag{}).Count(&count)
 	if result.Error != nil {
 
 		log.Println("ProductCategory Query Error", result.Error)
@@ -88,14 +89,14 @@ func SeedData() {
 		}
 
 		// 3. ใช้ GORM บันทึกข้อมูลลงตารางแบบ Bulk Insert (รวดเดียวทั้งหมด)
-		if err := GDB.Create(&datas).Error; err != nil {
+		if err := db.Create(&datas).Error; err != nil {
 			log.Fatalf("Failed to seed product category: %v", err)
 		}
 
 		log.Println("ProductHashtag Database seeded successfully!")
 	}
 
-	result = GDB.Model(&model.Product{}).Count(&count)
+	result = db.Model(&model.Product{}).Count(&count)
 	if result.Error != nil {
 
 		log.Println("ProductCategory Query Error", result.Error)
@@ -128,7 +129,7 @@ func SeedData() {
 		}
 
 		// 3. ใช้ GORM บันทึกข้อมูลลงตารางแบบ Bulk Insert (รวดเดียวทั้งหมด)
-		if err := GDB.Create(&datas).Error; err != nil {
+		if err := db.Create(&datas).Error; err != nil {
 			log.Fatalf("Failed to seed product category: %v", err)
 		}
 
